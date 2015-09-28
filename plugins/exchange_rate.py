@@ -18,20 +18,7 @@ from electrum_gui.qt.util import *
 from electrum_gui.qt.amountedit import AmountEdit
 
 
-EXCHANGES = ["BitcoinAverage",
-             "BitcoinVenezuela",
-             "BTCParalelo",
-             "Bitcurex",
-             "Bitmarket",
-             "BitPay",
-             "Blockchain",
-             "BTCChina",
-             "CaVirtEx",
-             "Coinbase",
-             "CoinDesk",
-             "itBit",
-             "LocalBitcoins",
-             "Winkdex"]
+EXCHANGES = ["cryptap.us"]
 
 EXCH_SUPPORT_HIST = [("CoinDesk", "USD"),
                      ("Winkdex", "USD"),
@@ -86,6 +73,7 @@ class Exchanger(threading.Thread):
             "itBit": self.update_ib,
             "LocalBitcoins": self.update_lb,
             "Winkdex": self.update_wd,
+            "cryptap.us": self.update_cryptapus,
         }
         try:
             rates = update_rates[self.use_exchange]()
@@ -103,6 +91,12 @@ class Exchanger(threading.Thread):
             self.update_rate()
             self.query_rates.wait(150)
 
+    def update_cryptapus(self):
+        quote_currencies = {}
+        jsonresp = self.get_json('cryptap.us', "/myr/jswallet/ticker.php")
+        for cur in jsonresp:
+            quote_currencies[str(cur)] = Decimal(jsonresp[cur]['last']) * Decimal('1000')
+        return quote_currencies
 
     def update_cd(self):
         resp_currencies = self.get_json('api.coindesk.com', "/v1/bpi/supported-currencies.json")
@@ -238,8 +232,9 @@ class Plugin(BasePlugin):
         self.get_fiat_price_text(r)
         quote = r.get(0)
         if quote:
-            price_text = "1 BTC~%s"%quote
-            fiat_currency = quote[-3:]
+            price_text = "1 kMYR~%s"%quote
+            s = quote.split()
+            fiat_currency = s[-1]
             btc_price = self.btc_rate
             fiat_balance = Decimal(btc_price) * Decimal(btc_balance) / COIN
             balance_text = "(%.2f %s)" % (fiat_balance,fiat_currency)

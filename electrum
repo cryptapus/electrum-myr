@@ -96,9 +96,9 @@ def run_gui(config):
     if url:
         if os.path.exists(url):
             # assume this is a payment request
-            url = "bitcoin:?r=file://"+ os.path.join(os.getcwd(), url)
+            url = "myriadcoin:?r=file://"+ os.path.join(os.getcwd(), url)
 
-        if not re.match('^bitcoin:', url):
+        if not re.match('^myriadcoin:', url):
             print_stderr('unknown command:', url)
             sys.exit(1)
 

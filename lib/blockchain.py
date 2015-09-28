@@ -27,7 +27,7 @@ class Blockchain():
     def __init__(self, config, network):
         self.config = config
         self.network = network
-        self.headers_url = 'https://headers.electrum.org/blockchain_headers'
+        self.headers_url = 'https://cryptap.us/myr/electrum/blockchain_headers'
         self.local_height = 0
         self.set_local_height()
 
@@ -54,15 +54,15 @@ class Blockchain():
                                  % (prev_hash, header.get('prev_block_hash')))
                 return False
             bits, target = self.get_target(height/2016, chain)
-            if bits != header.get('bits'):
-                self.print_error("bits mismatch: %s vs %s"
-                                 % (bits, header.get('bits')))
-                return False
-            _hash = self.hash_header(header)
-            if int('0x'+_hash, 16) > target:
-                self.print_error("insufficient proof of work: %s vs target %s"
-                                 % (int('0x'+_hash, 16), target))
-                return False
+            #if bits != header.get('bits'):
+            #    self.print_error("bits mismatch: %s vs %s"
+            #                     % (bits, header.get('bits')))
+            #    return False
+            #_hash = self.hash_header(header)
+            #if int('0x'+_hash, 16) > target:
+            #    self.print_error("insufficient proof of work: %s vs target %s"
+            #                     % (int('0x'+_hash, 16), target))
+            #    return False
 
             prev_header = header
 
@@ -90,8 +90,8 @@ class Blockchain():
             header = self.header_from_string(raw_header)
             _hash = self.hash_header(header)
             assert previous_hash == header.get('prev_block_hash')
-            assert bits == header.get('bits')
-            assert int('0x'+_hash,16) < target
+            #assert bits == header.get('bits')
+            #assert int('0x'+_hash,16) < target
 
             previous_header = header
             previous_hash = _hash

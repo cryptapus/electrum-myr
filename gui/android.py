@@ -474,7 +474,7 @@ def make_new_contact():
     if r:
         data = str(r['extras']['SCAN_RESULT']).strip()
         if data:
-            if re.match('^bitcoin:', data):
+            if re.match('^myriadcoin:', data):
                 out = util.parse_URI(data)
                 address = out.get('address')
             elif is_address(data):
@@ -582,7 +582,7 @@ def payto_loop():
                 amount = droid.fullQueryDetail('amount').result.get('text')
 
                 if not is_address(recipient):
-                    modal_dialog('Error','Invalid Bitcoin address')
+                    modal_dialog('Error','Invalid Unobtanium address')
                     continue
 
                 try:
@@ -606,7 +606,7 @@ def payto_loop():
                     data = str(r['extras']['SCAN_RESULT']).strip()
                     if data:
                         print "data", data
-                        if re.match('^bitcoin:', data):
+                        if re.match('^myriadcoin:', data):
                             rr = util.parse_URI(data)
                             amount = rr.get('amount')
                             address = rr.get('address')
@@ -664,7 +664,7 @@ def receive_loop():
             modal_dialog('URI copied to clipboard', receive_URI)
 
         elif event["name"]=="amount":
-            amount = modal_input('Amount', 'Amount you want to receive (in BTC). ', format_satoshis(receive_amount) if receive_amount else None, "numberDecimal")
+            amount = modal_input('Amount', 'Amount you want to receive (in MYR). ', format_satoshis(receive_amount) if receive_amount else None, "numberDecimal")
             if amount is not None:
                 receive_amount = int(COIN * Decimal(amount)) if amount else None
                 out = 'receive'
