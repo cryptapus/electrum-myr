@@ -57,7 +57,7 @@ class Exchanger(threading.Thread):
         self.is_running = False
 
     def update_rate(self):
-        self.use_exchange = self.parent.config.get('use_exchange', "Blockchain")
+        self.use_exchange = self.parent.config.get('use_exchange', "cryptap.us")
         update_rates = {
             "BitcoinAverage": self.update_ba,
             "BitcoinVenezuela": self.update_bv,
