@@ -95,7 +95,7 @@ class Exchanger(threading.Thread):
         quote_currencies = {}
         jsonresp = self.get_json('cryptap.us', "/myr/jswallet/ticker.php")
         for cur in jsonresp:
-            quote_currencies[str(cur)] = Decimal(jsonresp[cur]['last']) * Decimal('1000')
+            quote_currencies[str(cur)] = Decimal(jsonresp[cur]['last'])
         return quote_currencies
 
     def update_cd(self):
@@ -232,7 +232,7 @@ class Plugin(BasePlugin):
         self.get_fiat_price_text(r)
         quote = r.get(0)
         if quote:
-            price_text = "1 kMYR~%s"%quote
+            price_text = "1 MYR~%s"%quote
             s = quote.split()
             fiat_currency = s[-1]
             btc_price = self.btc_rate
