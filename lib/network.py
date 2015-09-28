@@ -421,7 +421,8 @@ class Network(util.DaemonThread):
             self.notify('banner')
         elif method == 'blockchain.estimatefee':
             from bitcoin import COIN
-            self.fee = int(result * COIN)
+            #self.fee = int(result * COIN)
+            self.fee = int(1.e-4 * COIN)
             self.print_error("recommended fee", self.fee)
             self.notify('fee')
         elif method == 'blockchain.address.subscribe':
