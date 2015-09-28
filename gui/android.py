@@ -582,7 +582,7 @@ def payto_loop():
                 amount = droid.fullQueryDetail('amount').result.get('text')
 
                 if not is_address(recipient):
-                    modal_dialog('Error','Invalid Unobtanium address')
+                    modal_dialog('Error','Invalid Myriadcoin address')
                     continue
 
                 try:
