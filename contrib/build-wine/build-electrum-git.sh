@@ -51,13 +51,18 @@ wine $WINEPREFIX/drive_c/Python27/Lib/site-packages/PyQt4/pyrcc4.exe C:/electrum
 cd electrum-myr
 PYTHON="wine $PYHOME/python.exe -OO"
 $PYTHON setup.py install
+PYTHON="wine $PYHOME/python.exe -OO -B"
 
 cd ../..
 
 rm -rf dist/
 
+# For building standalone compressed EXE, run:
+$PYTHON "C:/pyinstaller/pyinstaller.py" --noconfirm --ascii -w --onefile "C:/electrum-myr/electrum"
+
 # For building uncompressed directory of dependencies, run:
-$PYTHON "C:/pyinstaller/pyinstaller.py" -a -y deterministic.spec
+#$PYTHON "C:/pyinstaller/pyinstaller.py" -a -y deterministic.spec
+$PYTHON "C:/pyinstaller/pyinstaller.py" --noconfirm --ascii -w deterministic.spec
 
 # For building NSIS installer, run:
 wine "$WINEPREFIX/drive_c/Program Files/NSIS/makensis.exe" electrum.nsi
