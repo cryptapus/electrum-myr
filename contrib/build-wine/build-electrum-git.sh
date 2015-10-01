@@ -49,7 +49,7 @@ wine $WINEPREFIX/drive_c/Python27/Lib/site-packages/PyQt4/pyrcc4.exe C:/electrum
 #cp "$WINEPREFIX/drive_c/Program Files (x86)/ZBar/bin/"*.dll "$WINEPREFIX/drive_c/electrum/"
 
 cd electrum-myr
-#PYTHON="wine $PYHOME/python.exe -OO"
+PYTHON="wine $PYHOME/python.exe -OO"
 $PYTHON setup.py install
 
 cd ../..
