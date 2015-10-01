@@ -82,3 +82,7 @@ wine nsis.exe
 #wget -O upx.zip "http://upx.sourceforge.net/download/upx308w.zip"
 #unzip -o upx.zip
 #cp upx*/upx.exe .
+
+# fix python:
+cp $WINEPREFIX/drive_c/windows/system32/msvcp90.dll $WINEPREFIX/drive_c/Python27/
+cp $WINEPREFIX/drive_c/windows/system32/msvcm90.dll $WINEPREFIX/drive_c/Python27/
