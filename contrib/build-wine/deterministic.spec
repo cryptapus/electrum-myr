@@ -1,6 +1,6 @@
 # -*- mode: python -*-
 
-home = 'C:/electrum-myr/'
+home = 'C:\\electrum-myr\\'
 
 # We don't put these files in to actually include them in the script but to make the Analysis method scan them for imports
 a = Analysis([home+'electrum',
@@ -10,14 +10,16 @@ a = Analysis([home+'electrum',
               home+'lib/util.py',
               home+'lib/wallet.py',
               home+'lib/simple_config.py',
-              home+'lib/bitcoin.py'
+              home+'lib/bitcoin.py',
+              home+'lib/dnssec.py',
+              home+'lib/commands.py'
               ],
-             hiddenimports=['lib', 'gui'],
-             pathex=['lib:gui:plugins'],
-             hookspath=None)
+             pathex=['lib','gui','plugins','packages'],
+             hiddenimports=['lib','gui'],
+             hookspath=[])
 
 ##### include folder in distribution #######
-def extra_data(folder):
+def extra_datas(mydir):
     def rec_glob(p, files):
         import os
         import glob
@@ -26,26 +28,31 @@ def extra_data(folder):
                 files.append(d)
             rec_glob("%s/*" % d, files)
     files = []
-    rec_glob("%s/*" % folder, files)
-    extra_data = []
+    rec_glob("%s/*" % mydir, files)
+    extra_datas = []
     for f in files:
-        extra_data.append((f, f, 'DATA'))
+        d = f.split('\\')
+        t = ''
+        for a in d[2:]:
+            if len(t)==0:
+                t = a
+            else:
+                t = t+'\\'+a
+        extra_datas.append((t, f, 'DATA'))
 
-    return extra_data
+    return extra_datas
 ###########################################
 
 # append dirs
 
-# Theme data
-a.datas += extra_data('data')
-
-# Localization
-a.datas += extra_data('locale')
+# cacert.pem
+a.datas += [ ('requests/cacert.pem', home+'packages/requests/cacert.pem', 'DATA') ]
 
 # Py folders that are needed because of the magic import finding
-a.datas += extra_data('gui')
-a.datas += extra_data('lib')
-a.datas += extra_data('plugins')
+a.datas += extra_datas(home+'gui')
+a.datas += extra_datas(home+'lib')
+a.datas += extra_datas(home+'plugins')
+a.datas += extra_datas(home+'packages')
 
 pyz = PYZ(a.pure)
 exe = EXE(pyz,
