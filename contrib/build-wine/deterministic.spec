@@ -12,7 +12,8 @@ a = Analysis([home+'electrum',
               home+'lib/simple_config.py',
               home+'lib/bitcoin.py',
               home+'lib/dnssec.py',
-              home+'lib/commands.py'
+              home+'lib/commands.py',
+              home+'packages/requests/utils.py'
               ],
              pathex=['lib','gui','plugins','packages'],
              hiddenimports=['lib','gui'],
