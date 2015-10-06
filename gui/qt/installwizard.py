@@ -110,9 +110,7 @@ class InstallWizard(QDialog):
 
         self.wallet_types = [
             ('standard',  _("Standard wallet")),
-            ('twofactor', _("Wallet with two-factor authentication")),
             ('multisig',  _("Multi-signature wallet")),
-            ('hardware',  _("Hardware wallet")),
         ]
 
         for i, (wtype,name) in enumerate(self.wallet_types):
