@@ -36,17 +36,17 @@ descriptions = [
         'registers_wallet_type': ('hardware', 'btchip', _("Ledger wallet")),
         'available_for': ['qt', 'cmdline'],
     },
-    {
-        'name': 'cosigner_pool',
-        'fullname': _('Cosigner Pool'),
-        'description': ' '.join([
-            _("This plugin facilitates the use of multi-signatures wallets."),
-            _("It sends and receives partially signed transactions from/to your cosigner wallet."),
-            _("Transactions are encrypted and stored on a remote server.")
-        ]),
-        'requires_wallet_type': ['2of2', '2of3'],
-        'available_for': ['qt'],
-    },
+    #{
+    #    'name': 'cosigner_pool',
+    #    'fullname': _('Cosigner Pool'),
+    #    'description': ' '.join([
+    #        _("This plugin facilitates the use of multi-signatures wallets."),
+    #        _("It sends and receives partially signed transactions from/to your cosigner wallet."),
+    #        _("Transactions are encrypted and stored on a remote server.")
+    #    ]),
+    #    'requires_wallet_type': ['2of2', '2of3'],
+    #    'available_for': ['qt'],
+    #},
     {
         'name': 'email_requests',
         'fullname': 'Email',
@@ -59,12 +59,12 @@ descriptions = [
         'description': _("Exchange rates and currency conversion tools."),
         'available_for': ['qt'],
     },
-    {
-        'name': 'greenaddress_instant',
-        'fullname': 'GreenAddress instant',
-        'description': _("Allows validating if your transactions have instant confirmations by GreenAddress"),
-        'available_for': ['qt'],
-    },
+    #{
+    #    'name': 'greenaddress_instant',
+    #    'fullname': 'GreenAddress instant',
+    #    'description': _("Allows validating if your transactions have instant confirmations by GreenAddress"),
+    #    'available_for': ['qt'],
+    #},
     {
         'name':'keepkey',
         'fullname': 'KeepKey',
