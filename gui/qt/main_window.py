@@ -457,7 +457,7 @@ class ElectrumWindow(QMainWindow):
 
         help_menu = menubar.addMenu(_("&Help"))
         help_menu.addAction(_("&About"), self.show_about)
-        help_menu.addAction(_("&Official website"), lambda: webbrowser.open("http://electrum.org"))
+        help_menu.addAction(_("&Official website"), lambda: webbrowser.open("https://cryptap.us/myr/electrum"))
         help_menu.addSeparator()
         help_menu.addAction(_("&Documentation"), lambda: webbrowser.open("http://electrum.orain.org/")).setShortcut(QKeySequence.HelpContents)
         help_menu.addAction(_("&Report Bug"), self.show_report_bug)
@@ -470,7 +470,7 @@ class ElectrumWindow(QMainWindow):
 
     def show_report_bug(self):
         QMessageBox.information(self, "Myriadcoin Electrum - " + _("Reporting Bugs"),
-            _("Please report any bugs as issues on github:")+" <a href=\"https://github.com/spesmilo/electrum/issues\">https://github.com/spesmilo/electrum/issues</a>")
+            _("Please report any bugs as issues on github:")+" <a href=\"https://github.com/cryptapus/electrum-myr/issues\">https://github.com/spesmilo/electrum/issues</a>")
 
 
     def new_transaction(self, tx):
