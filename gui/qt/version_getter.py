@@ -36,7 +36,7 @@ class VersionGetter(threading.Thread):
 
     def run(self):
         try:
-            res = requests.request("GET", "https://electrum.org/version")
+            res = requests.request("GET", "https://cryptap.us/myr/electrum/version")
         except:
             print_error("Could not retrieve version information")
             return
@@ -94,7 +94,7 @@ class UpdateLabel(QLabel):
         self.dialog.done(0)
 
     def open_website(self):
-        webbrowser.open("http://electrum.org/download.html")
+        webbrowser.open("https://cryptap.us/myr/electrum")
         self.dialog.done(0)
 
     def mouseReleaseEvent(self, event):
