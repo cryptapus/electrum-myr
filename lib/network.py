@@ -42,24 +42,11 @@ from interface import Connection, Interface
 from blockchain import Blockchain
 from version import ELECTRUM_VERSION, PROTOCOL_VERSION
 
-DEFAULT_PORTS = {'t':'50001', 's':'50002', 'h':'8081', 'g':'8082'}
+DEFAULT_PORTS = {'t':'50003', 's':'50004', 'h':'8003', 'g':'8004'}
 
 DEFAULT_SERVERS = {
-    'erbium1.sytes.net':{'t':'50001', 's':'50002'},
-    'ecdsa.net':{'t':'50001', 's':'110'},
-    'electrum0.electricnewyear.net':{'t':'50001', 's':'50002'},
-    'VPS.hsmiths.com':{'t':'50001', 's':'50002'},
-    'ELECTRUM.jdubya.info':{'t':'50001', 's':'50002'},
-    'electrum.no-ip.org':{'t':'50001', 's':'50002', 'g':'443'},
-    'us.electrum.be':DEFAULT_PORTS,
-    'bitcoins.sk':{'t':'50001', 's':'50002'},
-    'electrum.petrkr.net':{'t':'50001', 's':'50002'},
-    'electrum.dragonzone.net':DEFAULT_PORTS,
-    'Electrum.hsmiths.com':{'t':'8080', 's':'995'},
-    'electrum3.hachre.de':{'t':'50001', 's':'50002'},
-    'elec.luggs.co':{'t':'80', 's':'443'},
-    'btc.smsys.me':{'t':'110', 's':'995'},
-    'electrum.online':{'t':'50001', 's':'50002'},
+    'kraken.cryptap.us':{'t':'50003', 's':'50004'},
+    'cetus.cryptap.us':{'t':'50003', 's':'50004'},
 }
 
 NODES_RETRY_INTERVAL = 60

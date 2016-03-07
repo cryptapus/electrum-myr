@@ -1,4 +1,4 @@
-Electrum - Lightweight Bitcoin client
+Myriadcoin Electrum - Lightweight Myriadcoin client
 =====================================
 
 ::

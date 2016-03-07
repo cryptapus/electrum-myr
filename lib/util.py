@@ -199,20 +199,20 @@ def profiler(func):
 
 def user_dir():
     if "HOME" in os.environ:
-        return os.path.join(os.environ["HOME"], ".electrum")
+        return os.path.join(os.environ["HOME"], ".electrum_myr")
     elif "APPDATA" in os.environ:
-        return os.path.join(os.environ["APPDATA"], "Electrum")
+        return os.path.join(os.environ["APPDATA"], "Electrum_myr")
     elif "LOCALAPPDATA" in os.environ:
-        return os.path.join(os.environ["LOCALAPPDATA"], "Electrum")
+        return os.path.join(os.environ["LOCALAPPDATA"], "Electrum_myr")
     elif 'ANDROID_DATA' in os.environ:
         try:
             import jnius
             env  = jnius.autoclass('android.os.Environment')
             _dir =  env.getExternalStorageDirectory().getPath()
-            return _dir + '/electrum/'
+            return _dir + '/electrum_myr/'
         except ImportError:
             pass
-        return "/sdcard/electrum/"
+        return "/sdcard/electrum_myr/"
     else:
         #raise Exception("No home directory found in environment variables.")
         return
@@ -310,30 +310,16 @@ def time_difference(distance_in_time, include_seconds):
         return "over %d years" % (round(distance_in_minutes / 525600))
 
 block_explorer_info = {
-    'Biteasy.com': ('https://www.biteasy.com/blockchain',
-                        {'tx': 'transactions', 'addr': 'addresses'}),
-    'Bitflyer.jp': ('https://chainflyer.bitflyer.jp',
-                        {'tx': 'Transaction', 'addr': 'Address'}),
-    'Blockchain.info': ('https://blockchain.info',
+    'birdonwheels5.no-ip.org': ('http://birdonwheels5.no-ip.org',
                         {'tx': 'tx', 'addr': 'address'}),
-    'blockchainbdgpzk.onion': ('https://blockchainbdgpzk.onion',
+    'Insight - cryptap.us': ('http://insight-myr.cryptap.us',
                         {'tx': 'tx', 'addr': 'address'}),
-    'Blockr.io': ('https://btc.blockr.io',
-                        {'tx': 'tx/info', 'addr': 'address/info'}),
-    'Blocktrail.com': ('https://www.blocktrail.com/BTC',
-                        {'tx': 'tx', 'addr': 'address'}),
-    'BTC.com': ('https://chain.btc.com',
-                        {'tx': 'tx', 'addr': 'address'}),
-    'Chain.so': ('https://www.chain.so',
-                        {'tx': 'tx/BTC', 'addr': 'address/BTC'}),
-    'Insight.is': ('https://insight.bitpay.com',
-                        {'tx': 'tx', 'addr': 'address'}),
-    'TradeBlock.com': ('https://tradeblock.com/blockchain',
-                        {'tx': 'tx', 'addr': 'address'}),
+    'Abe - cryptap.us': ('https://cryptap.us/myr/explorer',
+                        {'tx': 'tx', 'address': 'address'}),
 }
 
 def block_explorer(config):
-    return config.get('block_explorer', 'Blockchain.info')
+    return config.get('block_explorer', 'birdonwheels5.no-ip.org')
 
 def block_explorer_tuple(config):
     return block_explorer_info.get(block_explorer(config))
@@ -362,8 +348,8 @@ def parse_URI(uri, on_pr=None):
         return {'address': uri}
 
     u = urlparse.urlparse(uri)
-    if u.scheme != 'bitcoin':
-        raise BaseException("Not a bitcoin URI")
+    if u.scheme != 'myriadcoin':
+        raise BaseException("Not a myriadcoin URI")
     address = u.path
 
     # python for android fails to parse query
@@ -380,7 +366,7 @@ def parse_URI(uri, on_pr=None):
     out = {k: v[0] for k, v in pq.items()}
     if address:
         if not bitcoin.is_address(address):
-            raise BaseException("Invalid bitcoin address:" + address)
+            raise BaseException("Invalid myriadcoin address:" + address)
         out['address'] = address
     if 'amount' in out:
         am = out['amount']
@@ -431,7 +417,7 @@ def create_URI(addr, amount, message):
         if type(message) == unicode:
             message = message.encode('utf8')
         query.append('message=%s'%urllib.quote(message))
-    p = urlparse.ParseResult(scheme='bitcoin', netloc='', path=addr, params='', query='&'.join(query), fragment='')
+    p = urlparse.ParseResult(scheme='myriadcoin', netloc='', path=addr, params='', query='&'.join(query), fragment='')
     return urlparse.urlunparse(p)
 
 

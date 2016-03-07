@@ -1,6 +1,6 @@
 # -*- mode: python -*-
 
-home = 'C:\\electrum\\'
+home = 'C:\\electrum-myr\\'
 
 # We don't put these files in to actually include them in the script but to make the Analysis method scan them for imports
 a = Analysis([home+'electrum',
@@ -64,7 +64,7 @@ exe = EXE(pyz,
           a.scripts,
           a.binaries,
           a.datas,
-          name=os.path.join('build\\pyi.win32\\electrum', 'electrum.exe'),
+          name=os.path.join('build\\pyi.win32\\electrum-myr', 'electrum-myr.exe'),
           debug=False,
           strip=None,
           upx=False,
@@ -81,4 +81,4 @@ coll = COLLECT(exe,
                debug=False,
                icon=home+'icons/electrum.ico',
                console=False,
-               name=os.path.join('dist', 'electrum'))
+               name=os.path.join('dist', 'electrum-myr'))

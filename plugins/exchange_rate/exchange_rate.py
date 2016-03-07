@@ -87,7 +87,15 @@ class ExchangeBase(PrintError):
     def historical_rate(self, ccy, d_t):
         return self.history.get(ccy, {}).get(d_t.strftime('%Y-%m-%d'))
 
+class cryptapus(ExchangeBase):
+    def get_rates(self, ccy):
+        quote_currencies = {}
+        json = self.get_json('cryptap.us', '/myr/jswallet/ticker.php')
+        for cur in json:
+            quote_currencies[str(cur)] = Decimal(json[cur]['last'])
+        return quote_currencies
 
+"""
 class BitcoinAverage(ExchangeBase):
     def get_rates(self, ccy):
         json = self.get_json('api.bitcoinaverage.com', '/ticker/global/all')
@@ -276,6 +284,7 @@ class Bitcointoyou(ExchangeBase):
 
     def history_ccys(self):
         return ['BRL']
+"""
 
 
 def dictinvert(d):
@@ -334,7 +343,7 @@ class FxPlugin(BasePlugin, ThreadJob):
         return self.config.get("currency", "EUR")
 
     def config_exchange(self):
-        return self.config.get('use_exchange', 'BitcoinAverage')
+        return self.config.get('use_exchange', 'cryptapus')
 
     def show_history(self):
         return self.ccy in self.exchange.history_ccys()
@@ -379,7 +388,7 @@ class FxPlugin(BasePlugin, ThreadJob):
     @hook
     def get_fiat_status_text(self, btc_balance):
         rate = self.exchange_rate()
-        return _("  (No FX rate available)") if rate is None else "1 BTC~%s %s" % (self.value_str(COIN, rate), self.ccy)
+        return _("  (No FX rate available)") if rate is None else "1 MYR~%s %s" % (self.value_str(COIN, rate), self.ccy)
 
     def get_historical_rates(self):
         if self.show_history():
