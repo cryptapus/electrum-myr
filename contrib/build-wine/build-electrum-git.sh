@@ -33,7 +33,7 @@ else
 fi
 
 cd electrum-git
-VERSION=`git describe --tags`
+VERSION=`git rev-parse HEAD | awk '{ print substr($1, 0, 11) }'`
 echo "Last commit: $VERSION"
 
 cd ..
