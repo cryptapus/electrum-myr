@@ -736,7 +736,7 @@ def xpub_from_xprv(xprv, testnet=False):
 
 def bip32_root(seed, testnet=False):
     header_pub, header_priv = _get_headers(testnet)
-    I = hmac.new("Myriadcoin seed", seed, hashlib.sha512).digest()
+    I = hmac.new("Bitcoin seed", seed, hashlib.sha512).digest()
     master_k = I[0:32]
     master_c = I[32:]
     K, cK = get_pubkeys_from_secret(master_k)
