@@ -470,7 +470,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
 
     def show_about(self):
         QMessageBox.about(self, "Myriadcoin Electrum",
-            _("Version")+" %s" % (self.wallet.electrum_version) + "\n\n" + _("Myriadcoin Electrum's focus is speed, with low resource usage and simplifying Myriadcoin. You do not need to perform regular backups, because your wallet can be recovered from a secret phrase that you can memorize or write on paper. Startup times are instant because it operates in conjunction with high-performance servers that handle the most complicated parts of the Myriadcoin system.") + "\n\n" + _("Thank you to the Bitcoin Electrum team at https://electrum.org for their continued development of Electrum for Bitcoin.") + "\n\n" + _("Myriadcoin Electrum has been altered from Bitcoin Electrum by cryptapus. Donation are welcome (MYR): MCrypTZRTRk8RGjSt3MZ3atSEwSLPicePR"))
+            _("Version")+" %s" % (self.wallet.electrum_version) + "\n\n" + _("Myriadcoin Electrum's focus is speed, with low resource usage and simplifying Myriadcoin. You do not need to perform regular backups, because your wallet can be recovered from a secret phrase that you can memorize or write on paper. Startup times are instant because it operates in conjunction with high-performance servers that handle the most complicated parts of the Myriadcoin system.") + "\n\n" + _("Thank you to the Bitcoin Electrum team at https://electrum.org for their continued development of Electrum for Bitcoin.") + "\n\n" + _("Myriadcoin Electrum has been altered from Bitcoin Electrum by cryptapus. Donation are welcome (XMY): MCrypTZRTRk8RGjSt3MZ3atSEwSLPicePR"))
 
     def show_report_bug(self):
         msg = ' '.join([
@@ -556,13 +556,17 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         return self.decimal_point
 
     def base_unit(self):
-        assert self.decimal_point in [2, 5, 8]
+        assert self.decimal_point in [2, 5, 8, 11, 14]
         if self.decimal_point == 2:
-            return 'uMYR'
+            return 'uXMY'
         if self.decimal_point == 5:
-            return 'mMYR'
+            return 'mXMY'
         if self.decimal_point == 8:
-            return 'MYR'
+            return 'XMY'
+        if self.decimal_point == 11:
+            return 'kXMY'
+        if self.decimal_point == 14:
+            return 'MXMY'
         raise Exception('Unknown base unit')
 
     def update_status(self):
@@ -2736,9 +2740,9 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         SSL_id_e.setReadOnly(True)
         id_widgets.append((SSL_id_label, SSL_id_e))
 
-        units = ['MYR', 'mMYR', 'uMYR']
+        units = ['MXMY', 'kXMY', 'XMY', 'mXMY', 'uXMY']
         msg = _('Base unit of your wallet.')\
-              + '\n1MYR=1000mMYR.\n' \
+              + '\n1XMY=1000mXMY.\n' \
               + _(' These settings affects the fields in the Send tab')+' '
         unit_label = HelpLabel(_('Base unit') + ':', msg)
         unit_combo = QComboBox()
@@ -2750,11 +2754,15 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
                 return
             edits = self.amount_e, self.fee_e, self.receive_amount_e, fee_e
             amounts = [edit.get_amount() for edit in edits]
-            if unit_result == 'MYR':
+            if unit_result == 'MXMY':
+                self.decimal_point = 14
+            elif unit_result == 'kXMY':
+                self.decimal_point = 11
+            elif unit_result == 'XMY':
                 self.decimal_point = 8
-            elif unit_result == 'mMYR':
+            elif unit_result == 'mXMY':
                 self.decimal_point = 5
-            elif unit_result == 'uMYR':
+            elif unit_result == 'uXMY':
                 self.decimal_point = 2
             else:
                 raise Exception('Unknown base unit')
