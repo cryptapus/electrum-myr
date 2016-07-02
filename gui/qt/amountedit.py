@@ -79,7 +79,7 @@ class BTCAmountEdit(AmountEdit):
         assert p in [2, 5, 8, 11, 14]
         if p == 14:
             return 'MXMY'
-        if p == 8:
+        if p == 11:
             return 'kXMY'
         if p == 8:
             return 'XMY'
