@@ -37,17 +37,26 @@ import socket
 import json
 
 import util
+import bitcoin
 from bitcoin import *
 from interface import Connection, Interface
 from blockchain import Blockchain
 from version import ELECTRUM_VERSION, PROTOCOL_VERSION
 
-DEFAULT_PORTS = {'t':'50003', 's':'50004', 'h':'8003', 'g':'8004'}
+DEFAULT_PORTS = {'t':'50003', 's':'50004'}
 
 DEFAULT_SERVERS = {
     'kraken.cryptap.us':{'t':'50003', 's':'50004'},
     'cetus.cryptap.us':{'t':'50003', 's':'50004'},
 }
+
+def set_testnet():
+    global DEFAULT_PORTS, DEFAULT_SERVERS
+    DEFAULT_PORTS = {'t':'51001', 's':'51002'}
+    DEFAULT_SERVERS = {
+        '14.3.140.101': DEFAULT_PORTS,
+        'testnet.not.fyi': DEFAULT_PORTS
+    }
 
 NODES_RETRY_INTERVAL = 60
 SERVER_RETRY_INTERVAL = 10
@@ -64,7 +73,7 @@ def parse_servers(result):
         pruning_level = '-'
         if len(item) > 2:
             for v in item[2]:
-                if re.match("[stgh]\d*", v):
+                if re.match("[st]\d*", v):
                     protocol, port = v[0], v[1:]
                     if port == '': port = DEFAULT_PORTS[protocol]
                     out[protocol] = port
@@ -84,7 +93,7 @@ def parse_servers(result):
 
     return servers
 
-def filter_protocol(hostmap = DEFAULT_SERVERS, protocol = 's'):
+def filter_protocol(hostmap, protocol = 's'):
     '''Filters the hostmap for those implementing protocol.
     The result is a list in serialized form.'''
     eligible = []
@@ -94,7 +103,9 @@ def filter_protocol(hostmap = DEFAULT_SERVERS, protocol = 's'):
             eligible.append(serialize_server(host, port, protocol))
     return eligible
 
-def pick_random_server(hostmap = DEFAULT_SERVERS, protocol = 's', exclude_set = set()):
+def pick_random_server(hostmap = None, protocol = 's', exclude_set = set()):
+    if hostmap is None:
+        hostmap = DEFAULT_SERVERS
     eligible = list(set(filter_protocol(hostmap, protocol)) - exclude_set)
     return random.choice(eligible) if eligible else None
 
@@ -177,7 +188,6 @@ class Network(util.DaemonThread):
 
         self.banner = ''
         self.donation_address = ''
-        self.fee = None
         self.relay_fee = None
         self.heights = {}
         self.merkle_roots = {}
@@ -204,7 +214,7 @@ class Network(util.DaemonThread):
         # to or have an ongoing connection with
         self.interface = None
         self.interfaces = {}
-        self.auto_connect = self.config.get('auto_connect', False)
+        self.auto_connect = self.config.get('auto_connect', True)
         self.connecting = set()
         self.socket_queue = Queue.Queue()
         self.start_network(deserialize_server(self.default_server)[2],
@@ -301,7 +311,8 @@ class Network(util.DaemonThread):
         self.queue_request('server.banner', [])
         self.queue_request('server.donation_address', [])
         self.queue_request('server.peers.subscribe', [])
-        self.queue_request('blockchain.estimatefee', [2])
+        for i in bitcoin.FEE_TARGETS:
+            self.queue_request('blockchain.estimatefee', [i])
         self.queue_request('blockchain.relayfee', [])
 
     def get_status_value(self, key):
@@ -310,7 +321,7 @@ class Network(util.DaemonThread):
         elif key == 'banner':
             value = self.banner
         elif key == 'fee':
-            value = self.fee
+            value = self.config.fee_estimates
         elif key == 'updated':
             value = (self.get_local_height(), self.get_server_height())
         elif key == 'servers':
@@ -501,8 +512,8 @@ class Network(util.DaemonThread):
                 self.donation_address = result
         elif method == 'blockchain.estimatefee':
             if error is None:
-                self.fee = int(result * COIN)
-                self.print_error("recommended fee", self.fee)
+                i = params[0]
+                self.config.fee_estimates[i] = int(result * COIN)
                 self.notify('fee')
         elif method == 'blockchain.relayfee':
             if error is None:
@@ -699,6 +710,8 @@ class Network(util.DaemonThread):
 
     def on_get_header(self, interface, response):
         '''Handle receiving a single block header'''
+        if self.blockchain.downloading_headers:
+            return
         if self.bc_requests:
             req_if, data = self.bc_requests[0]
             req_height = data.get('header_height', -1)
@@ -721,6 +734,8 @@ class Network(util.DaemonThread):
         '''Send a request for the next header, or a chunk of them,
         if necessary.
         '''
+        if self.blockchain.downloading_headers:
+            return False
         local_height, if_height = self.get_local_height(), data['if_height']
         if if_height <= local_height:
             return False
@@ -739,14 +754,13 @@ class Network(util.DaemonThread):
             # If the connection was lost move on
             if not interface in self.interfaces.values():
                 continue
-
             req_time = data.get('req_time')
             if not req_time:
                 # No requests sent yet.  This interface has a new height.
                 # Request headers if it is ahead of our blockchain
                 if not self.bc_request_headers(interface, data):
                     continue
-            elif time.time() - req_time > 10:
+            elif time.time() - req_time > 20:
                 interface.print_error("blockchain request timed out")
                 self.connection_down(interface.server)
                 continue
@@ -761,7 +775,7 @@ class Network(util.DaemonThread):
             time.sleep(0.1)
             return
         rin = [i for i in self.interfaces.values()]
-        win = [i for i in self.interfaces.values() if i.unsent_requests]
+        win = [i for i in self.interfaces.values() if i.num_requests()]
         try:
             rout, wout, xout = select.select(rin, win, [], 0.1)
         except socket.error as (code, msg):
@@ -784,7 +798,7 @@ class Network(util.DaemonThread):
             self.process_pending_sends()
 
         self.stop_network()
-        self.print_error("stopped")
+        self.on_stop()
 
     def on_header(self, i, header):
         height = header.get('block_height')
@@ -808,7 +822,7 @@ class Network(util.DaemonThread):
     def get_local_height(self):
         return self.blockchain.height()
 
-    def synchronous_get(self, request, timeout=100000000):
+    def synchronous_get(self, request, timeout=30):
         queue = Queue.Queue()
         self.send([request], queue.put)
         try:
@@ -819,7 +833,7 @@ class Network(util.DaemonThread):
             raise BaseException(r.get('error'))
         return r.get('result')
 
-    def broadcast(self, tx, timeout=10):
+    def broadcast(self, tx, timeout=30):
         tx_hash = tx.hash()
         try:
             out = self.synchronous_get(('blockchain.transaction.broadcast', [str(tx)]), timeout)

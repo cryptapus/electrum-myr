@@ -31,14 +31,15 @@ import time
 import jsonrpclib
 from jsonrpclib.SimpleJSONRPCServer import SimpleJSONRPCServer, SimpleJSONRPCRequestHandler
 
+from version import ELECTRUM_VERSION
 from network import Network
 from util import json_decode, DaemonThread
 from util import print_msg, print_error, print_stderr
 from wallet import WalletStorage, Wallet
-from wizard import WizardBase
 from commands import known_commands, Commands
 from simple_config import SimpleConfig
-
+from plugins import run_hook
+from exchange_rate import FxThread
 
 def get_lockfile(config):
     return os.path.join(config.path, 'daemon')
@@ -100,27 +101,41 @@ class RequestHandler(SimpleJSONRPCRequestHandler):
 class Daemon(DaemonThread):
 
     def __init__(self, config, fd):
-
         DaemonThread.__init__(self)
         self.config = config
         if config.get('offline'):
             self.network = None
+            self.fx = None
         else:
             self.network = Network(config)
             self.network.start()
+            self.fx = FxThread(config, self.network)
+            self.network.add_jobs([self.fx])
+
         self.gui = None
         self.wallets = {}
-        # Setup server
-        cmd_runner = Commands(self.config, None, self.network)
-        host = config.get('rpchost', 'localhost')
+        # Setup JSONRPC server
+        path = config.get_wallet_path()
+        default_wallet = self.load_wallet(path)
+        self.cmd_runner = Commands(self.config, default_wallet, self.network)
+        self.init_server(config, fd)
+
+    def init_server(self, config, fd):
+        host = config.get('rpchost', '127.0.0.1')
         port = config.get('rpcport', 0)
-        server = SimpleJSONRPCServer((host, port), logRequests=False,
-                                     requestHandler=RequestHandler)
+        try:
+            server = SimpleJSONRPCServer((host, port), logRequests=False,
+                                         requestHandler=RequestHandler)
+        except:
+            self.print_error('Warning: cannot initialize RPC server on host', host)
+            self.server = None
+            os.close(fd)
+            return
         os.write(fd, repr((server.socket.getsockname(), time.time())))
         os.close(fd)
         server.timeout = 0.1
         for cmdname in known_commands:
-            server.register_function(getattr(cmd_runner, cmdname), cmdname)
+            server.register_function(getattr(self.cmd_runner, cmdname), cmdname)
         server.register_function(self.run_cmdline, 'run_cmdline')
         server.register_function(self.ping, 'ping')
         server.register_function(self.run_daemon, 'daemon')
@@ -132,8 +147,8 @@ class Daemon(DaemonThread):
 
     def run_daemon(self, config):
         sub = config.get('subcommand')
-        assert sub in ['start', 'stop', 'status']
-        if sub == 'start':
+        assert sub in [None, 'start', 'stop', 'status']
+        if sub in [None, 'start']:
             response = "Daemon already running"
         elif sub == 'status':
             if self.network:
@@ -143,9 +158,10 @@ class Daemon(DaemonThread):
                     'server': p[0],
                     'blockchain_height': self.network.get_local_height(),
                     'server_height': self.network.get_server_height(),
-                    'nodes': self.network.get_interfaces(),
+                    'spv_nodes': len(self.network.get_interfaces()),
                     'connected': self.network.is_connected(),
                     'auto_connect': p[4],
+                    'version': ELECTRUM_VERSION,
                     'wallets': {k: w.is_up_to_date()
                                 for k, w in self.wallets.items()},
                 }
@@ -169,28 +185,33 @@ class Daemon(DaemonThread):
             response = "Error: Electrum is running in daemon mode. Please stop the daemon first."
         return response
 
-    def load_wallet(self, path, get_wizard=None):
+    def load_wallet(self, path):
+        # wizard will be launched if we return
         if path in self.wallets:
             wallet = self.wallets[path]
-        else:
-            storage = WalletStorage(path)
-            if get_wizard:
-                if storage.file_exists:
-                    wallet = Wallet(storage)
-                    action = wallet.get_action()
-                else:
-                    action = 'new'
-                if action:
-                    wizard = get_wizard()
-                    wallet = wizard.run(self.network, storage)
-                else:
-                    wallet.start_threads(self.network)
-            else:
-                wallet = Wallet(storage)
-                wallet.start_threads(self.network)
-            if wallet:
-                self.wallets[path] = wallet
+            return wallet
+        storage = WalletStorage(path)
+        if not storage.file_exists:
+            return
+        if storage.requires_split():
+            return
+        if storage.requires_upgrade():
+            self.print_error('upgrading wallet format')
+            storage.upgrade()
+        if storage.get_action():
+            return
+        wallet = Wallet(storage)
+        wallet.start_threads(self.network)
+        self.wallets[path] = wallet
         return wallet
+
+    def add_wallet(self, wallet):
+        path = wallet.storage.path
+        self.wallets[path] = wallet
+
+    def stop_wallet(self, path):
+        wallet = self.wallets.pop(path)
+        wallet.stop_threads()
 
     def run_cmdline(self, config_options):
         config = SimpleConfig(config_options)
@@ -213,13 +234,14 @@ class Daemon(DaemonThread):
 
     def run(self):
         while self.is_running():
-            self.server.handle_request()
+            self.server.handle_request() if self.server else time.sleep(0.1)
         for k, wallet in self.wallets.items():
             wallet.stop_threads()
         if self.network:
             self.print_error("shutting down network")
             self.network.stop()
             self.network.join()
+        self.on_stop()
 
     def stop(self):
         self.print_error("stopping, removing lockfile")

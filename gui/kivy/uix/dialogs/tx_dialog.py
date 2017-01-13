@@ -17,6 +17,7 @@ Builder.load_string('''
     is_mine: True
     can_sign: False
     can_broadcast: False
+    can_rbf: False
     fee_str: ''
     date_str: ''
     amount_str: ''
@@ -73,12 +74,13 @@ Builder.load_string('''
             Button:
                 size_hint: 0.5, None
                 height: '48dp'
-                text: _('Sign') if root.can_sign else _('Broadcast') if root.can_broadcast else ''
-                opacity: 1 if root.can_sign or root.can_broadcast else 0
-                disabled: not( root.can_sign or root.can_broadcast )
+                text: _('Sign') if root.can_sign else _('Broadcast') if root.can_broadcast else _('Bump fee') if root.can_rbf else ''
+                disabled: not(root.can_sign or root.can_broadcast or root.can_rbf)
+                opacity: 0 if self.disabled else 1
                 on_release:
                     if root.can_sign: root.do_sign()
                     if root.can_broadcast: root.do_broadcast()
+                    if root.can_rbf: root.do_rbf()
             IconButton:
                 size_hint: 0.5, None
                 height: '48dp'
@@ -88,7 +90,7 @@ Builder.load_string('''
                 size_hint: 0.5, None
                 height: '48dp'
                 text: _('Close')
-                on_release: popup.dismiss()
+                on_release: root.dismiss()
 ''')
 
 
@@ -104,40 +106,52 @@ class TxDialog(Factory.Popup):
         self.update()
 
     def update(self):
-        self.can_broadcast = False
-        if self.tx.is_complete():
-            self.tx_hash = self.tx.hash()
-            self.description = self.wallet.get_label(self.tx_hash)
-            if self.tx_hash in self.wallet.transactions.keys():
-                conf, timestamp = self.wallet.get_confirmations(self.tx_hash)
-                self.status_str = _("%d confirmations")%conf if conf else _('Pending')
-                if timestamp:
-                    self.date_str = datetime.fromtimestamp(timestamp).isoformat(' ')[:-3]
-            else:
-                self.can_broadcast = self.app.network is not None
-                self.status_str = _('Signed')
+        format_amount = self.app.format_amount_and_units
+        tx_hash, self.status_str, self.description, self.can_broadcast, self.can_rbf, amount, fee, height, conf, timestamp, exp_n = self.wallet.get_tx_info(self.tx)
+        self.tx_hash = tx_hash or ''
+        if timestamp:
+            self.date_str = datetime.fromtimestamp(timestamp).isoformat(' ')[:-3]
+        elif exp_n:
+            self.date_str = _('Within %d blocks') % exp_n if exp_n > 0 else _('unknown (low fee)')
         else:
-            s, r = self.tx.signature_count()
-            self.status_str = _("Unsigned") if s == 0 else _('Partially signed') + ' (%d/%d)'%(s,r)
+            self.date_str = ''
 
-        is_relevant, is_mine, v, fee = self.wallet.get_wallet_delta(self.tx)
-        self.is_mine = is_mine
-        if is_relevant:
-            if is_mine:
-                if fee is not None:
-                    self.amount_str = self.app.format_amount_and_units(-v+fee)
-                    self.fee_str = self.app.format_amount_and_units(-fee)
-                else:
-                    self.amount_str = self.app.format_amount_and_units(-v)
-                    self.fee_str = _("unknown")
-            else:
-                self.amount_str = self.app.format_amount_and_units(v)
-                self.fee_str = ''
-        else:
+        if amount is None:
             self.amount_str = _("Transaction unrelated to your wallet")
-            self.fee_str = ''
+        elif amount > 0:
+            self.is_mine = False
+            self.amount_str = format_amount(amount)
+        else:
+            self.is_mine = True
+            self.amount_str = format_amount(-amount)
+        self.fee_str = format_amount(fee) if fee is not None else _('unknown')
         self.can_sign = self.wallet.can_sign(self.tx)
         self.ids.output_list.update(self.tx.outputs())
+
+    def do_rbf(self):
+        from bump_fee_dialog import BumpFeeDialog
+        is_relevant, is_mine, v, fee = self.wallet.get_wallet_delta(self.tx)
+        size = self.tx.estimated_size()
+        d = BumpFeeDialog(self.app, fee, size, self._do_rbf)
+        d.open()
+
+    def _do_rbf(self, old_fee, new_fee, is_final):
+        if new_fee is None:
+            return
+        delta = new_fee - old_fee
+        if delta < 0:
+            self.app.show_error("fee too low")
+            return
+        try:
+            new_tx = self.wallet.bump_fee(self.tx, delta)
+        except BaseException as e:
+            self.app.show_error(str(e))
+            return
+        if is_final:
+            new_tx.set_sequence(0xffffffff)
+        self.tx = new_tx
+        self.update()
+        self.do_sign()
 
     def do_sign(self):
         self.app.protected(_("Enter your PIN code in order to sign this transaction"), self._do_sign, ())

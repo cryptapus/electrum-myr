@@ -14,7 +14,7 @@ class ElectrumGui:
 
     def __init__(self, config, daemon, plugins):
         self.config = config
-        network = daemon.network
+        self.network = daemon.network
         storage = WalletStorage(config.get_wallet_path())
         if not storage.file_exists:
             print "Wallet not found. try 'electrum create'"
@@ -31,10 +31,10 @@ class ElectrumGui:
         self.str_fee = ""
 
         self.wallet = Wallet(storage)
-        self.wallet.start_threads(network)
+        self.wallet.start_threads(self.network)
         self.contacts = StoreDict(self.config, 'contacts')
 
-        network.register_callback(self.on_network, ['updated', 'banner'])
+        self.network.register_callback(self.on_network, ['updated', 'banner'])
         self.commands = [_("[h] - displays this help text"), \
                          _("[i] - display transaction history"), \
                          _("[o] - enter payment order"), \
@@ -127,7 +127,7 @@ class ElectrumGui:
         self.print_list(messages, "%19s  %25s "%("Key", "Value"))
 
     def print_addresses(self):
-        messages = map(lambda addr: "%30s    %30s       "%(addr, self.wallet.labels.get(addr,"")), self.wallet.addresses())
+        messages = map(lambda addr: "%30s    %30s       "%(addr, self.wallet.labels.get(addr,"")), self.wallet.get_addresses())
         self.print_list(messages, "%19s  %25s "%("Address", "Label"))
 
     def print_order(self):

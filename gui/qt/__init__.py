@@ -43,15 +43,17 @@ from electrum.paymentrequest import InvoiceStore
 from electrum.contacts import Contacts
 from electrum.synchronizer import Synchronizer
 from electrum.verifier import SPV
-from electrum.util import DebugMem
+from electrum.util import DebugMem, UserCancelled
 from electrum.wallet import Abstract_Wallet
-from installwizard import InstallWizard
+from installwizard import InstallWizard, GoBack
 
 
 try:
     import icons_rc
 except Exception:
-    sys.exit("Error: Could not import icons_rc.py, please generate it with: 'pyrcc4 icons.qrc -o gui/qt/icons_rc.py'")
+    print "Error: Could not find icons file."
+    print "Please run 'pyrcc4 icons.qrc -o gui/qt/icons_rc.py', and reinstall Electrum"
+    sys.exit(1)
 
 from util import *   # * needed for plugins
 from main_window import ElectrumWindow
@@ -149,9 +151,6 @@ class ElectrumGui:
         run_hook('on_new_window', w)
         return w
 
-    def get_wizard(self):
-        return InstallWizard(self.config, self.app, self.plugins)
-
     def start_new_window(self, path, uri):
         '''Raises the window for the wallet if it is open.  Otherwise
         opens the wallet and creates a new window for it.'''
@@ -160,47 +159,60 @@ class ElectrumGui:
                 w.bring_to_top()
                 break
         else:
-            wallet = self.daemon.load_wallet(path, self.get_wizard)
-            if not wallet:
+            try:
+                wallet = self.daemon.load_wallet(path)
+            except BaseException as e:
+                QMessageBox.information(None, _('Error'), str(e), _('OK'))
                 return
+            if wallet is None:
+                wizard = InstallWizard(self.config, self.app, self.plugins, path)
+                wallet = wizard.run_and_get_wallet()
+                if not wallet:
+                    return
+                wallet.start_threads(self.daemon.network)
+                self.daemon.add_wallet(wallet)
             w = self.create_window_for_wallet(wallet)
-
         if uri:
             w.pay_to_URI(uri)
-
         return w
 
     def close_window(self, window):
         self.windows.remove(window)
         self.build_tray_menu()
         # save wallet path of last open window
-        if self.config.get('wallet_path') is None and not self.windows:
-            path = window.wallet.storage.path
-            self.config.set_key('gui_last_wallet', path)
+        if not self.windows:
+            self.config.save_last_wallet(window.wallet)
         run_hook('on_close_window', window)
 
+    def init_network(self):
+        # Show network dialog if config does not exist
+        if self.daemon.network:
+            if self.config.get('auto_connect') is None:
+                wizard = InstallWizard(self.config, self.app, self.plugins, None)
+                wizard.init_network(self.daemon.network)
+                wizard.terminate()
+
     def main(self):
-        self.timer.start()
-        # open last wallet
-        if self.config.get('wallet_path') is None:
-            last_wallet = self.config.get('gui_last_wallet')
-            if last_wallet is not None and os.path.exists(last_wallet):
-                self.config.cmdline_options['default_wallet_path'] = last_wallet
-
-        if not self.start_new_window(self.config.get_wallet_path(),
-                                     self.config.get('url')):
+        try:
+            self.init_network()
+        except UserCancelled:
             return
-
+        except GoBack:
+            return
+        except:
+            traceback.print_exc(file=sys.stdout)
+            return
+        self.timer.start()
+        self.config.open_last_wallet()
+        path = self.config.get_wallet_path()
+        if not self.start_new_window(path, self.config.get('url')):
+            return
         signal.signal(signal.SIGINT, lambda *args: self.app.quit())
-
         # main loop
         self.app.exec_()
-
         # Shut down the timer cleanly
         self.timer.stop()
-
         # clipboard persistence. see http://www.mail-archive.com/pyqt@riverbankcomputing.com/msg17328.html
         event = QtCore.QEvent(QtCore.QEvent.Clipboard)
         self.app.sendEvent(self.app.clipboard(), event)
-
         self.tray.hide()

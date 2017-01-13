@@ -36,6 +36,7 @@ import threading
 from i18n import _
 
 base_units = {'BTC':8, 'mBTC':5, 'uBTC':2}
+fee_levels = [_('Within 25 blocks'), _('Within 10 blocks'), _('Within 5 blocks'), _('Within 2 blocks'), _('In the next block')]
 
 def normalize_version(v):
     return [int(x) for x in re.sub(r'(\.0+)*$','', v).split(".")]
@@ -148,6 +149,12 @@ class DaemonThread(threading.Thread, PrintError):
         with self.running_lock:
             self.running = False
 
+    def on_stop(self):
+        if 'ANDROID_DATA' in os.environ:
+            import jnius
+            jnius.detach()
+            self.print_error("jnius detach")
+        self.print_error("stopped")
 
 
 is_verbose = False
@@ -196,23 +203,54 @@ def profiler(func):
     return lambda *args, **kw_args: do_profile(func, args, kw_args)
 
 
+def android_ext_dir():
+    import jnius
+    env = jnius.autoclass('android.os.Environment')
+    return env.getExternalStorageDirectory().getPath()
+
+def android_data_dir():
+    import jnius
+    PythonActivity = jnius.autoclass('org.kivy.android.PythonActivity')
+    return PythonActivity.mActivity.getFilesDir().getPath() + '/data'
+
+def android_headers_path():
+    path = android_ext_dir() + '/org.electrum.electrum/blockchain_headers'
+    d = os.path.dirname(path)
+    if not os.path.exists(d):
+        os.mkdir(d)
+    return path
+
+def android_check_data_dir():
+    """ if needed, move old directory to sandbox """
+    ext_dir = android_ext_dir()
+    data_dir = android_data_dir()
+    old_electrum_dir = ext_dir + '/electrum'
+    if not os.path.exists(data_dir) and os.path.exists(old_electrum_dir):
+        import shutil
+        new_headers_path = android_headers_path()
+        old_headers_path = old_electrum_dir + '/blockchain_headers'
+        if not os.path.exists(new_headers_path) and os.path.exists(old_headers_path):
+            print_error("Moving headers file to", new_headers_path)
+            shutil.move(old_headers_path, new_headers_path)
+        print_error("Moving data to", data_dir)
+        shutil.move(old_electrum_dir, data_dir)
+    return data_dir
+
+def get_headers_path(config):
+    if 'ANDROID_DATA' in os.environ:
+        return android_headers_path()
+    else:
+        return os.path.join(config.path, 'blockchain_headers')
 
 def user_dir():
-    if "HOME" in os.environ:
+    if 'ANDROID_DATA' in os.environ:
+        return android_check_data_dir()
+    elif os.name == 'posix':
         return os.path.join(os.environ["HOME"], ".electrum_myr")
     elif "APPDATA" in os.environ:
         return os.path.join(os.environ["APPDATA"], "Electrum_myr")
     elif "LOCALAPPDATA" in os.environ:
         return os.path.join(os.environ["LOCALAPPDATA"], "Electrum_myr")
-    elif 'ANDROID_DATA' in os.environ:
-        try:
-            import jnius
-            env  = jnius.autoclass('android.os.Environment')
-            _dir =  env.getExternalStorageDirectory().getPath()
-            return _dir + '/electrum_myr/'
-        except ImportError:
-            pass
-        return "/sdcard/electrum_myr/"
     else:
         #raise Exception("No home directory found in environment variables.")
         return

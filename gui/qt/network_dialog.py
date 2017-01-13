@@ -27,7 +27,7 @@ from PyQt4.QtGui import *
 from PyQt4.QtCore import *
 
 from electrum.i18n import _
-from electrum import DEFAULT_PORTS
+from electrum.network import DEFAULT_PORTS
 from electrum.network import serialize_server, deserialize_server
 
 from util import *
@@ -73,7 +73,7 @@ class NetworkChoiceLayout(object):
             else:
                 status += "\n" + _("Disconnected from server")
         else:
-            status = _("Please choose a server.") + "\n" + _("Select 'Cancel' if you are offline.")
+            status = _("Please choose a server.") + "\n" + _("Press 'Next' if you are offline.")
 
         vbox = QVBoxLayout()
         hbox = QHBoxLayout()

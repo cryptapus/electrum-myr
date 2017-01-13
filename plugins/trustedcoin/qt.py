@@ -37,21 +37,8 @@ from electrum_gui.qt.amountedit import AmountEdit
 from electrum_gui.qt.main_window import StatusBarButton
 from electrum.i18n import _
 from electrum.plugins import hook
-from electrum import wizard
+from trustedcoin import TrustedCoinPlugin, server
 
-from trustedcoin import TrustedCoinPlugin, DISCLAIMER, server
-
-def need_server(wallet, tx):
-    from electrum.account import BIP32_Account
-    # Detect if the server is needed
-    long_id, short_id = wallet.get_user_id()
-    xpub3 = wallet.master_public_keys['x3/']
-    for x in tx.inputs_to_sign():
-        if x[0:2] == 'ff':
-            xpub, sequence = BIP32_Account.parse_xpubkey(x)
-            if xpub == xpub3:
-                return True
-    return False
 
 class Plugin(TrustedCoinPlugin):
 
@@ -68,7 +55,7 @@ class Plugin(TrustedCoinPlugin):
             action = lambda: window.show_message(msg)
         else:
             action = partial(self.settings_dialog, window)
-        button = StatusBarButton(QIcon(":icons/trustedcoin.png"),
+        button = StatusBarButton(QIcon(":icons/trustedcoin-status.png"),
                                  _("TrustedCoin"), action)
         window.statusBar().addPermanentWidget(button)
         t = Thread(target=self.request_billing_info, args=(wallet,))
@@ -99,7 +86,7 @@ class Plugin(TrustedCoinPlugin):
         if not wallet.can_sign_without_server():
             self.print_error("twofactor:sign_tx")
             auth_code = None
-            if need_server(wallet, tx):
+            if wallet.keystores['x3/'].get_tx_derivations(tx):
                 auth_code = self.auth_dialog(window)
             else:
                 self.print_error("twofactor: xpub3 not needed")
@@ -109,16 +96,6 @@ class Plugin(TrustedCoinPlugin):
         task = partial(self.request_billing_info, window.wallet)
         return WaitingDialog(window, 'Getting billing information...', task,
                              on_finished)
-
-    def confirm(self, window, msg):
-        vbox = QVBoxLayout()
-        vbox.addWidget(WWLabel(msg))
-        window.set_main_layout(vbox)
-
-    def show_disclaimer(self, wallet, window):
-        window.set_icon(':icons/trustedcoin.png')
-        self.confirm(window, '\n\n'.join(DISCLAIMER))
-        self.set_enabled(wallet, True)
 
     @hook
     def abort_send(self, window):
@@ -150,7 +127,7 @@ class Plugin(TrustedCoinPlugin):
         hbox = QHBoxLayout()
 
         logo = QLabel()
-        logo.setPixmap(QPixmap(":icons/trustedcoin.png"))
+        logo.setPixmap(QPixmap(":icons/trustedcoin-status.png"))
         msg = _('This wallet is protected by TrustedCoin\'s two-factor authentication.') + '<br/>'\
               + _("For more information, visit") + " <a href=\"https://api.trustedcoin.com/#/electrum-help\">https://api.trustedcoin.com/#/electrum-help</a>"
         label = QLabel(msg)
@@ -180,9 +157,6 @@ class Plugin(TrustedCoinPlugin):
         grid.addWidget(QLabel(window.format_amount(v) + ' ' + window.base_unit()), 0, 1)
 
         i = 1
-
-        if 10 not in price_per_tx:
-            price_per_tx[10] = 10 * price_per_tx.get(1)
 
         for k, v in sorted(price_per_tx.items()):
             if k == 1:
@@ -260,11 +234,9 @@ class Plugin(TrustedCoinPlugin):
 
         window.set_main_layout(vbox, next_enabled=False)
         next_button.setText(prior_button_text)
-
         return str(email_e.text())
 
-
-    def setup_google_auth(self, window, _id, otp_secret):
+    def request_otp_dialog(self, window, _id, otp_secret):
         vbox = QVBoxLayout()
         if otp_secret is not None:
             uri = "otpauth://totp/%s?secret=%s"%('trustedcoin.com', otp_secret)
@@ -275,7 +247,10 @@ class Plugin(TrustedCoinPlugin):
             vbox.addWidget(qrw, 1)
             msg = _('Then, enter your Google Authenticator code:')
         else:
-            label = QLabel("This wallet is already registered, but it was never authenticated. To finalize your registration, please enter your Google Authenticator Code. If you do not have this code, delete the wallet file and start a new registration")
+            label = QLabel(
+                "This wallet is already registered with Trustedcoin. "
+                "To finalize wallet creation, please enter your Google Authenticator Code. "
+            )
             label.setWordWrap(1)
             vbox.addWidget(label)
             msg = _('Google Authenticator code:')
@@ -288,18 +263,20 @@ class Plugin(TrustedCoinPlugin):
         hbox.addWidget(pw)
         vbox.addLayout(hbox)
 
-        def set_enabled():
-            window.next_button.setEnabled(len(pw.text()) == 6)
-        pw.textChanged.connect(set_enabled)
+        cb_lost = QCheckBox(_("I have lost my Google Authenticator account"))
+        cb_lost.setToolTip(_("Check this box to request a new secret. You will need to retype your seed."))
+        vbox.addWidget(cb_lost)
+        cb_lost.setVisible(otp_secret is None)
 
-        while True:
-            if not window.set_main_layout(vbox, next_enabled=False,
-                                          raise_on_cancel=False):
-                return False
-            otp = pw.get_amount()
-            try:
-                server.auth(_id, otp)
-                return True
-            except:
-                window.show_message(_('Incorrect password'))
-                pw.setText('')
+        def set_enabled():
+            b = True if cb_lost.isChecked() else len(pw.text()) == 6
+            window.next_button.setEnabled(b)
+
+        pw.textChanged.connect(set_enabled)
+        cb_lost.toggled.connect(set_enabled)
+
+        window.set_main_layout(vbox, next_enabled=False,
+                               raise_on_cancel=False)
+        return pw.get_amount(), cb_lost.isChecked()
+
+

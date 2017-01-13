@@ -94,7 +94,7 @@ class PasswordLayout(object):
 
             m1 = _('New Password:') if kind == PW_NEW else _('Password:')
             msgs = [m1, _('Confirm Password:')]
-            if wallet and wallet.use_encryption:
+            if wallet and wallet.has_password():
                 grid.addWidget(QLabel(_('Current Password:')), 0, 0)
                 grid.addWidget(self.pw, 0, 1)
                 lockfile = ":icons/lock.png"
@@ -146,7 +146,11 @@ class PasswordLayout(object):
         return None
 
     def new_password(self):
-        return unicode(self.new_pw.text()) or None
+        pw = unicode(self.new_pw.text())
+        # Empty passphrases are fine and returned empty.
+        if pw == "" and self.kind != PW_PASSPHRASE:
+            pw = None
+        return pw
 
 
 class PasswordDialog(WindowModalDialog):

@@ -106,9 +106,8 @@ class ElectrumGui:
 
         b = 0
         self.history = []
-
         for item in self.wallet.get_history():
-            tx_hash, conf, value, timestamp, balance = item
+            tx_hash, height, conf, timestamp, value, balance = item
             if conf:
                 try:
                     time_str = datetime.datetime.fromtimestamp(timestamp).isoformat(' ')[:-3]
@@ -147,7 +146,7 @@ class ElectrumGui:
         self.stdscr.addstr(self.maxy -1, self.maxx-30, ' '.join([_("Settings"), _("Network"), _("Quit")]))
 
     def print_receive(self):
-        addr = self.wallet.get_unused_address(None)
+        addr = self.wallet.get_receiving_address()
         self.stdscr.addstr(2, 1, "Address: "+addr)
         self.print_qr(addr)
 
@@ -157,7 +156,7 @@ class ElectrumGui:
 
     def print_addresses(self):
         fmt = "%-35s  %-30s"
-        messages = map(lambda addr: fmt % (addr, self.wallet.labels.get(addr,"")), self.wallet.addresses())
+        messages = map(lambda addr: fmt % (addr, self.wallet.labels.get(addr,"")), self.wallet.get_addresses())
         self.print_list(messages,   fmt % ("Address", "Label"))
 
     def print_edit_line(self, y, label, text, index, size):
@@ -322,7 +321,7 @@ class ElectrumGui:
             self.show_message(_('Invalid Fee'))
             return
 
-        if self.wallet.use_encryption:
+        if self.wallet.has_password():
             password = self.password_dialog()
             if not password:
                 return
