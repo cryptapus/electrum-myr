@@ -2404,6 +2404,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         feebox_cb.stateChanged.connect(on_feebox)
         fee_widgets.append((feebox_cb, None))
 
+        """
         use_rbf = self.config.get('use_rbf', False)
         rbf_cb = QCheckBox(_('Enable Replace-By-Fee'))
         rbf_cb.setChecked(use_rbf)
@@ -2415,6 +2416,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         rbf_cb.stateChanged.connect(on_rbf)
         rbf_cb.setToolTip(_('Enable RBF'))
         fee_widgets.append((rbf_cb, None))
+        """
 
         msg = _('OpenAlias record, used to receive coins and to sign payment requests.') + '\n\n'\
               + _('The following alias providers are available:') + '\n'\

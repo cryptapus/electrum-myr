@@ -20,7 +20,8 @@ CCY_PRECISIONS = {'BHD': 3, 'BIF': 0, 'BYR': 0, 'CLF': 4, 'CLP': 0,
                   'JOD': 3, 'JPY': 0, 'KMF': 0, 'KRW': 0, 'KWD': 3,
                   'LYD': 3, 'MGA': 1, 'MRO': 1, 'OMR': 3, 'PYG': 0,
                   'RWF': 0, 'TND': 3, 'UGX': 0, 'UYI': 0, 'VND': 0,
-                  'VUV': 0, 'XAF': 0, 'XAU': 4, 'XOF': 0, 'XPF': 0}
+                  'VUV': 0, 'XAF': 0, 'XAU': 4, 'XOF': 0, 'XPF': 0,
+                  'BTC': 8, 'mBTC': 5, 'bits': 2}
 
 class ExchangeBase(PrintError):
 
@@ -92,7 +93,20 @@ class cryptapus(ExchangeBase):
         json = self.get_json('cryptap.us', '/myr/jswallet/ticker.php')
         for cur in json:
             quote_currencies[str(cur)] = Decimal(json[cur]['last'])
+        print(quote_currencies)
         return quote_currencies
+
+    def history_ccys(self):
+        return ['AUD', 'BRL', 'CAD', 'CHF', 'CNY', 'DKK', 'EUR', 'GBP', 'HKD',
+                'INR', 'ISK', 'JPY', 'KRW', 'NZD', 'PLN', 'RUB', 'SEK',
+                'SGD', 'TWD', 'USD', 'Gold (ozt)', 'Silver (ozt)', 'Gold (g)',
+                'Silver (g)', 'ZAR', 'BTC', 'mBTC', 'bits']
+
+    def historical_rates(self, ccy):
+        history = self.get_csv('api.bitcoinaverage.com',
+                               "/history/%s/per_day_all_time_history.csv" % ccy)
+        return dict([(h['DateTime'][:10], h['Average'])
+                     for h in history])
 
 """
 class BitcoinAverage(ExchangeBase):

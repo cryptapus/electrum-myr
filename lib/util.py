@@ -348,8 +348,6 @@ def time_difference(distance_in_time, include_seconds):
         return "over %d years" % (round(distance_in_minutes / 525600))
 
 block_explorer_info = {
-    'birdonwheels5.no-ip.org': ('http://birdonwheels5.no-ip.org',
-                        {'tx': 'tx', 'addr': 'address'}),
     'Insight - cryptap.us': ('http://insight-myr.cryptap.us',
                         {'tx': 'tx', 'addr': 'address'}),
     'Abe - cryptap.us': ('https://cryptap.us/myr/explorer',
@@ -357,7 +355,7 @@ block_explorer_info = {
 }
 
 def block_explorer(config):
-    return config.get('block_explorer', 'birdonwheels5.no-ip.org')
+    return config.get('block_explorer', 'Insight - cryptap.us')
 
 def block_explorer_tuple(config):
     return block_explorer_info.get(block_explorer(config))
