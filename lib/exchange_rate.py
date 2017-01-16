@@ -93,7 +93,6 @@ class cryptapus(ExchangeBase):
         json = self.get_json('cryptap.us', '/myr/jswallet/ticker.php')
         for cur in json:
             quote_currencies[str(cur)] = Decimal(json[cur]['last'])
-        print(quote_currencies)
         return quote_currencies
 
     def history_ccys(self):
