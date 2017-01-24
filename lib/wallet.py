@@ -864,6 +864,10 @@ class Abstract_Wallet(PrintError):
 
     def estimate_fee(self, config, size):
         fee = int(config.fee_per_kb() * size / 1000.)
+        # Don't exceed largest fee accepted by Myriad network:
+        if fee > bitcoin.MAX_FEE_TOTAL or fee < 0:
+            self.print_error('Fee is: '+str(fee)+', Using MAX_FEE_TOTAL')
+            fee = bitcoin.MAX_FEE_TOTAL
         return fee
 
     def mktx(self, outputs, password, config, fee=None, change_addr=None, domain=None):
