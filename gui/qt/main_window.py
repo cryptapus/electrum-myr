@@ -2387,7 +2387,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         gui_widgets.append((nz_label, nz))
 
         dynfee_cb = QCheckBox(_('Use dynamic fees'))
-        dynfee_cb.setChecked(self.config.get('dynamic_fees', True))
+        dynfee_cb.setChecked(self.config.get('dynamic_fees', False))
         dynfee_cb.setToolTip(_("Use fees recommended by the server."))
         def on_dynfee(x):
             self.config.set_key('dynamic_fees', x == Qt.Checked)
