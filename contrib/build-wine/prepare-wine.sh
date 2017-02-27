@@ -22,7 +22,7 @@ set -e
 
 # Clean up Wine environment
 echo "Cleaning $WINEPREFIX"
-rm -rf $WINEPREFIX
+rm -rf $WINEPREFIX/*
 echo "done"
 
 wine 'wineboot'
