@@ -105,7 +105,7 @@ class TcpConnection(threading.Thread, util.PrintError):
         for res in l:
             try:
                 s = socket.socket(res[0], socket.SOCK_STREAM)
-                s.settimeout(10)
+                s.settimeout(60)
                 s.connect(res[4])
                 s.settimeout(2)
                 s.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
@@ -291,8 +291,8 @@ class Interface(util.PrintError):
 
     def has_timed_out(self):
         '''Returns True if the interface has timed out.'''
-        if (self.unanswered_requests and time.time() - self.request_time > 10
-            and self.pipe.idle_time() > 10):
+        if (self.unanswered_requests and time.time() - self.request_time > 60
+            and self.pipe.idle_time() > 60):
             self.print_error("timeout", len(self.unanswered_requests))
             return True
 
