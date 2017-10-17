@@ -9,8 +9,8 @@ Myriadcoin Electrum - Lightweight Myriadcoin client
   Homepage: https://electrum.org/
 
 
-.. image:: https://travis-ci.org/spesmilo/electrum.svg?branch=master
-    :target: https://travis-ci.org/spesmilo/electrum
+.. image:: https://travis-ci.org/cryptapus/electrum-myr.svg?branch=master
+    :target: https://travis-ci.org/cryptapus/electrum-myr
     :alt: Build Status
 
 
