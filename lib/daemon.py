@@ -120,7 +120,7 @@ def get_rpc_credentials(config):
 
 class Daemon(DaemonThread):
 
-    def __init__(self, config, fd):
+    def __init__(self, config, fd, is_gui):
         DaemonThread.__init__(self)
         self.config = config
         if config.get('offline'):
@@ -135,12 +135,9 @@ class Daemon(DaemonThread):
         self.gui = None
         self.wallets = {}
         # Setup JSONRPC server
-        path = config.get_wallet_path()
-        default_wallet = self.load_wallet(path)
-        self.cmd_runner = Commands(self.config, default_wallet, self.network)
-        self.init_server(config, fd)
+        self.init_server(config, fd, is_gui)
 
-    def init_server(self, config, fd):
+    def init_server(self, config, fd, is_gui):
         host = config.get('rpchost', '127.0.0.1')
         port = config.get('rpcport', 0)
 
@@ -157,14 +154,17 @@ class Daemon(DaemonThread):
             return
         os.write(fd, repr((server.socket.getsockname(), time.time())))
         os.close(fd)
-        server.timeout = 0.1
-        for cmdname in known_commands:
-            server.register_function(getattr(self.cmd_runner, cmdname), cmdname)
-        server.register_function(self.run_cmdline, 'run_cmdline')
-        server.register_function(self.ping, 'ping')
-        server.register_function(self.run_daemon, 'daemon')
-        server.register_function(self.run_gui, 'gui')
         self.server = server
+        server.timeout = 0.1
+        server.register_function(self.ping, 'ping')
+        if is_gui:
+            server.register_function(self.run_gui, 'gui')
+        else:
+            server.register_function(self.run_daemon, 'daemon')
+            self.cmd_runner = Commands(self.config, None, self.network)
+            for cmdname in known_commands:
+                server.register_function(getattr(self.cmd_runner, cmdname), cmdname)
+            server.register_function(self.run_cmdline, 'run_cmdline')
 
     def ping(self):
         return True
@@ -199,12 +199,13 @@ class Daemon(DaemonThread):
     def run_gui(self, config_options):
         config = SimpleConfig(config_options)
         if self.gui:
-            if hasattr(self.gui, 'new_window'):
-                path = config.get_wallet_path()
-                self.gui.new_window(path, config.get('url'))
-                response = "ok"
-            else:
-                response = "error: current GUI does not support multiple windows"
+            #if hasattr(self.gui, 'new_window'):
+            #    path = config.get_wallet_path()
+            #    self.gui.new_window(path, config.get('url'))
+            #    response = "ok"
+            #else:
+            #    response = "error: current GUI does not support multiple windows"
+            response = "error: Electrum GUI already running"
         else:
             response = "Error: Electrum is running in daemon mode. Please stop the daemon first."
         return response
