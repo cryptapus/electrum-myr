@@ -33,6 +33,7 @@ import traceback
 import urlparse
 import urllib
 import threading
+import hmac
 from i18n import _
 
 base_units = {'MXMY':15, 'kXMY':11, 'XMY':8, 'mXMY':5, 'uXMY':2}
@@ -191,6 +192,13 @@ def json_decode(x):
     except:
         return x
 
+
+# taken from Django Source Code
+def constant_time_compare(val1, val2):
+    """Return True if the two strings are equal, False otherwise."""
+    return hmac.compare_digest(to_bytes(val1, 'utf8'), to_bytes(val2, 'utf8'))
+
+
 # decorator that prints execution time
 def profiler(func):
     def do_profile(func, args, kw_args):
@@ -241,6 +249,14 @@ def get_headers_path(config):
         return android_headers_path()
     else:
         return os.path.join(config.path, 'blockchain_headers')
+
+def to_string(x, enc):
+    if isinstance(x, (bytes, bytearray)):
+        return x.decode(enc)
+    if isinstance(x, str):
+        return x
+    else:
+        raise TypeError("Not a string or bytes like object")
 
 def user_dir():
     if 'ANDROID_DATA' in os.environ:
