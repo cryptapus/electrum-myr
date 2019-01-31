@@ -1,3 +1,6 @@
+Myriadcoin Electrum is no longer supported. Please use Myriadcoin-core: http://www.myriadcoin.org
+=====================================
+
 Myriadcoin Electrum - Lightweight Myriadcoin client
 =====================================
 
